@@ -67,8 +67,8 @@ typedef struct range_vector3d_struct
 
 typedef struct range_float_struct
 {
-    float max;
     float min;
+    float max;
 } Rangef;
 
 typedef struct interpolate_struct
@@ -327,15 +327,19 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
         ret = emitter->shape.start;
         break;
     case ST_Line:
+    {
         float t = ((float)rand() / (float)RAND_MAX);
         Vector3d dir = particle_emitter_direction(emitter->shape.start, emitter->shape.end);
         ret = (Vector3d){.x = emitter->shape.start.x + dir.x * t,
-                         .y = emitter->shape.start.y + dir.y * t,
-                         .z = emitter->shape.start.z + dir.z * t};
+                            .y = emitter->shape.start.y + dir.y * t,
+                            .z = emitter->shape.start.z + dir.z * t};
+    }
         break;
     case ST_Sphere:
+    {
         float r = particle_emitter_distance(emitter->shape.start, emitter->shape.end);
         ret = particle_emitter_randomize_vector((Rangef){.min = r, .max = r});
+    }
         break;
     case ST_Cube:
         ret = (Vector3d){
