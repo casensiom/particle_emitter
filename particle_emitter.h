@@ -59,26 +59,25 @@ typedef struct vector3d_struct
 
 #endif // LINEAR_ALGEBRA
 
-
 typedef struct range_float_struct
 {
     float min;
     float max;
-} Rangef;
+} Range;
 
 typedef struct range_struct
 {
-    Rangef start;
-    Rangef end;
-} Range;
+    Range start;
+    Range end;
+} InterpolationRange;
 
 typedef struct range_color_struct
 {
-    Range r;
-    Range g;
-    Range b;
-    Range a;
-} RangeColor;
+    InterpolationRange r;
+    InterpolationRange g;
+    InterpolationRange b;
+    InterpolationRange a;
+} ColorRange;
 
 typedef struct interpolate_struct
 {
@@ -86,13 +85,6 @@ typedef struct interpolate_struct
     float end;
     float value;
 } Interpolate;
-
-typedef struct interpolate_vector3d_struct
-{
-    Interpolate x;
-    Interpolate y;
-    Interpolate z;
-} InterpolateVector3d;
 
 typedef struct interpolate_color_struct
 {
@@ -164,11 +156,11 @@ typedef struct shape_struct
 
 typedef struct emit_configuration_struct
 {
-    Rangef lifespan;
-    Rangef speed;
-    RangeColor color;
-    Range scale;
-    Range rotation;
+    Range lifespan;
+    Range speed;
+    ColorRange color;
+    InterpolationRange scale;
+    InterpolationRange rotation;
 
     float particlesPerSecond;
 } EmitConfiguration;
@@ -230,12 +222,12 @@ static float particle_emitter_randomize(float min, float max)
     return min + ((float)rand() / (float)RAND_MAX) * (max - min);
 }
 
-static float particle_emitter_randomize_rangef(Rangef range)
+static float particle_emitter_randomize_range(Range range)
 {
     return particle_emitter_randomize(range.min, range.max);
 }
 
-static Vector3d particle_emitter_randomize_vector(Rangef range)
+static Vector3d particle_emitter_randomize_vector(Range range)
 {
     float mag = particle_emitter_randomize(range.min, range.max);
     Vector3d v = {
@@ -248,7 +240,7 @@ static Vector3d particle_emitter_randomize_vector(Rangef range)
     return (Vector3d){.x = v.x * mag, .y = v.y * mag, .z = v.z * mag};
 }
 
-static Interpolate particle_emitter_randomize_interpolate(Range range)
+static Interpolate particle_emitter_randomize_interpolate(InterpolationRange range)
 {
     float start = particle_emitter_randomize(range.start.min, range.start.max);
     return (Interpolate){
@@ -292,7 +284,6 @@ void linked_list_move_item(LinkedList **from, LinkedList **to)
 
     if (*from == NULL)
     {
-        printf("Cant add particle, pool is empty\n");
         return;
     }
 
@@ -349,16 +340,16 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
         float t = ((float)rand() / (float)RAND_MAX);
         Vector3d dir = particle_emitter_direction(emitter->shape.start, emitter->shape.end);
         ret = (Vector3d){.x = emitter->shape.start.x + dir.x * t,
-                            .y = emitter->shape.start.y + dir.y * t,
-                            .z = emitter->shape.start.z + dir.z * t};
+                         .y = emitter->shape.start.y + dir.y * t,
+                         .z = emitter->shape.start.z + dir.z * t};
     }
-        break;
+    break;
     case ST_Sphere:
     {
         float r = particle_emitter_distance(emitter->shape.start, emitter->shape.end);
-        ret = particle_emitter_randomize_vector((Rangef){.min = r, .max = r});
+        ret = particle_emitter_randomize_vector((Range){.min = r, .max = r});
     }
-        break;
+    break;
     case ST_Cube:
         ret = (Vector3d){
             .x = particle_emitter_randomize(emitter->shape.start.x, emitter->shape.end.x),
@@ -373,7 +364,7 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
 static void init_particle(Emitter *emitter, Particle *particle)
 {
     particle->timestamp = emitter->elapsed;
-    particle->lifetime = particle_emitter_randomize_rangef(emitter->config.lifespan);
+    particle->lifetime = particle_emitter_randomize_range(emitter->config.lifespan);
 
     // TODO: Improve position
     particle->pos = particle_emitter_random_pos(emitter);
@@ -480,15 +471,11 @@ Emitter particle_emitter_create(EmitConfiguration configuration)
             .items = NULL,
             .count = 0,
             .capacity = 0},
-        .forces = (ForceArray){
-            .items = NULL,
-            .count = 0,
-            .capacity = 0},
+        .forces = (ForceArray){.items = NULL, .count = 0, .capacity = 0},
         .friction = (Vector3d){.x = 1, .y = 1, .z = 1},
         .speedMax = (Vector3d){.x = FLT_MAX, .y = FLT_MAX, .z = FLT_MAX},
-        .speedMin = (Vector3d){.x = FLT_MIN, .y = FLT_MIN, .z = FLT_MIN}
-    };
-        
+        .speedMin = (Vector3d){.x = FLT_MIN, .y = FLT_MIN, .z = FLT_MIN}};
+
     emitter.config = configuration;
     emitter.pendingParticles = 0;
     emitter.elapsed = 0;
