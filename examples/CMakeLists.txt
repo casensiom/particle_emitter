@@ -23,3 +23,6 @@ add_dependencies(common_dependency copy_assets)
 
 add_executable(example0 example0.c)
 target_link_libraries(example0 PUBLIC common_dependency)
+
+add_executable(example1 example1.c)
+target_link_libraries(example1 PUBLIC common_dependency)

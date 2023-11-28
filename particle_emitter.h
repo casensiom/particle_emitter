@@ -31,21 +31,24 @@
     }
 
 #define PE_INSERT(INSTANCE, ITEM)                        \
+    do                                                   \
     {                                                    \
         if ((INSTANCE).capacity > (INSTANCE).count)      \
         {                                                \
             (INSTANCE).items[(INSTANCE).count] = (ITEM); \
             (INSTANCE).count++;                          \
         }                                                \
-    }
+    } while (0)
 
-#define PE_DESTROY_ARRAY(arr) \
-    {                         \
-        free(arr.items);      \
-        arr.items = NULL;     \
-        arr.count = 0;        \
-        arr.capacity = 0;     \
-    }
+#define PE_DESTROY_ARRAY(arr)  \
+    do                         \
+    {                          \
+        if (arr.items != NULL) \
+            free(arr.items);   \
+        arr.items = NULL;      \
+        arr.count = 0;         \
+        arr.capacity = 0;      \
+    } while (0)
 
 #ifndef LINEAR_ALGEBRA
 #define LINEAR_ALGEBRA
@@ -261,7 +264,7 @@ static void particle_emitter_interpolate(Interpolate *value, float ease)
 
 Vector3d particle_emitter_direction(Vector3d pos1, Vector3d pos2)
 {
-    return (Vector3d){.x = pos1.x - pos2.x, .y = pos1.y - pos2.y, .z = pos1.z - pos2.z};
+    return (Vector3d){.x = pos2.x - pos1.x, .y = pos2.y - pos1.y, .z = pos2.z - pos1.z};
 }
 
 float particle_emitter_distance(Vector3d pos1, Vector3d pos2)
@@ -347,7 +350,16 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
     case ST_Sphere:
     {
         float r = particle_emitter_distance(emitter->shape.start, emitter->shape.end);
-        ret = particle_emitter_randomize_vector((Range){.min = r, .max = r});
+        float rnd1 =((float)rand() / (float)RAND_MAX);
+        float rnd2 =((float)rand() / (float)RAND_MAX);
+        float theta = 2.0 * M_PI * rnd1; // azimutal angle
+        float phi = acosf(2.0 * rnd2 - 1.0); // polar angle
+
+        r = sqrtf(r) / 2;
+        ret = (Vector3d){
+            .x = emitter->shape.start.x + r * sinf(phi) * cosf(theta),
+            .y = emitter->shape.start.y + r * sinf(phi) * sinf(theta),
+            .z = emitter->shape.start.z + r * cosf(phi)};
     }
     break;
     case ST_Cube:
@@ -387,13 +399,14 @@ static void update_particle_position(Emitter *emitter, Particle *particle, float
 
     for (size_t i = 0; i < env->vortices.count; ++i)
     {
-        Vector3d dir = particle_emitter_direction(env->vortices.items[i].pos, particle->pos);
+        Vector3d dir = particle_emitter_direction(particle->pos, env->vortices.items[i].pos);
         float dist = particle_emitter_distance(particle->pos, env->vortices.items[i].pos);
         float magnitude = env->vortices.items[i].magnitude / dist;
         particle->speed.x += dir.x * magnitude;
         particle->speed.y += dir.y * magnitude;
         particle->speed.z += dir.z * magnitude;
     }
+
     for (size_t i = 0; i < env->forces.count; ++i)
     {
         Vector3d dir = env->forces.items[i].dir;
@@ -402,6 +415,13 @@ static void update_particle_position(Emitter *emitter, Particle *particle, float
         particle->speed.y += dir.y * magnitude;
         particle->speed.z += dir.z * magnitude;
     }
+
+    particle->speed.x = (particle->speed.x > emitter->environment.speedMax.x) ? emitter->environment.speedMax.x : particle->speed.x;
+    particle->speed.y = (particle->speed.y > emitter->environment.speedMax.y) ? emitter->environment.speedMax.y : particle->speed.y;
+    particle->speed.z = (particle->speed.z > emitter->environment.speedMax.z) ? emitter->environment.speedMax.z : particle->speed.z;
+    particle->speed.x = (particle->speed.x < -emitter->environment.speedMax.x) ? -emitter->environment.speedMax.x : particle->speed.x;
+    particle->speed.y = (particle->speed.y < -emitter->environment.speedMax.y) ? -emitter->environment.speedMax.y : particle->speed.y;
+    particle->speed.z = (particle->speed.z < -emitter->environment.speedMax.z) ? -emitter->environment.speedMax.z : particle->speed.z;
 
     particle->pos.x += particle->speed.x * dt;
     particle->pos.y += particle->speed.y * dt;
@@ -467,10 +487,7 @@ Emitter particle_emitter_create(EmitConfiguration configuration)
         .start = (Vector3d){.x = 0, .y = 0, .z = 0},
         .end = (Vector3d){.x = 0, .y = 0, .z = 0}};
     emitter.environment = (Environment){
-        .vortices = (VortexArray){
-            .items = NULL,
-            .count = 0,
-            .capacity = 0},
+        .vortices = (VortexArray){.items = NULL, .count = 0, .capacity = 0},
         .forces = (ForceArray){.items = NULL, .count = 0, .capacity = 0},
         .friction = (Vector3d){.x = 1, .y = 1, .z = 1},
         .speedMax = (Vector3d){.x = FLT_MAX, .y = FLT_MAX, .z = FLT_MAX},
@@ -502,6 +519,7 @@ void particle_emitter_destroy(Emitter *emitter)
     free(emitter->allocated);
     emitter->first = NULL;
     emitter->pool = NULL;
+    PE_DESTROY_ARRAY(emitter->environment.vortices);
     PE_DESTROY_ARRAY(emitter->environment.forces);
 }
 

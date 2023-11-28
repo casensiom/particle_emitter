@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 
     // Define the camera to look into our 3d world
     Camera camera = {0};
-    camera.position = (Vector3){0, 0, 300};  // Camera position
+    camera.position = (Vector3){0, 5, 15};  // Camera position
     camera.target = (Vector3){0, 0, 0};      // Camera looking at point
     camera.up = (Vector3){0.0f, 1.0f, 0.0f}; // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                     // Camera field-of-view Y
@@ -18,29 +18,27 @@ int main(int argc, char *argv[])
 
     EmitConfiguration configuration;
     configuration.particlesPerSecond = 10;
-    configuration.lifespan = (Range){.min = 8, .max = 10};
-    configuration.speed = (Range){.min = 20, .max = 50};
+    configuration.lifespan = (Range){.min = 4, .max = 4};
+    configuration.speed = (Range){.min = 2, .max = 3};
     configuration.color.r = (InterpolationRange){.start = (Range){.min = 0, .max = 0}, .end = (Range){.min = 0.1, .max = 0.1}};
     configuration.color.g = (InterpolationRange){.start = (Range){.min = 0.8, .max = 0.8}, .end = (Range){.min = 1, .max = 1}};
     configuration.color.b = (InterpolationRange){.start = (Range){.min = 0, .max = 0}, .end = (Range){.min = 0.1, .max = 0.1}};
     configuration.color.a = (InterpolationRange){.start = (Range){.min = 1, .max = 1}, .end = (Range){.min = 0, .max = .1}};
-    configuration.scale = (InterpolationRange){.start = (Range){.min = 1, .max = 1}, .end = (Range){.min = 1.2, .max = 1.3}};
+    configuration.scale = (InterpolationRange){.start = (Range){.min = .3, .max = .3}, .end = (Range){.min = .6, .max = .6}};
     configuration.rotation = (InterpolationRange){.start = (Range){.min = 1, .max = 1}, .end = (Range){.min = 1, .max = 1}};
     Emitter emitter = particle_emitter_create(configuration);
 
     emitter.environment.friction.x = 0.99999;
     emitter.environment.friction.y = 0.99999;
     emitter.environment.friction.z = 0.99999;
+    emitter.environment.speedMax = (Vector3d){.x = 10, .y =10, .z = 10};
 
-    emitter.shape.type = ST_Cube;
-    emitter.shape.start = (Vector3d){.x = -10, .y = 10, .z = 0};
-    emitter.shape.end = (Vector3d){.x = 10, .y = -10, .z = 0};
+    emitter.shape.type = ST_Point;
+    emitter.shape.start = (Vector3d){.x = 0, .y = 0, .z = 0};
 
-    emitter.environment.vortices = PE_CREATE_ARRAY(Vortex, 4);
-    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = 100, .y = -10, .z = 0}, .magnitude = 20}));
-    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = -100, .y = 10, .z = 0}, .magnitude = 20}));
-    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = 100, .y = -10, .z = 0}, .magnitude = -10}));
-    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = -100, .y = 10, .z = 0}, .magnitude = -10}));
+    emitter.environment.vortices = PE_CREATE_ARRAY(Vortex, 2);
+    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = 5, .y = 0, .z = 0}, .magnitude = .005}));
+    PE_INSERT(emitter.environment.vortices, ((Vortex){.pos = (Vector3d){.x = -5, .y = 0, .z = 0}, .magnitude = -.001}));
 
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
@@ -52,7 +50,7 @@ int main(int argc, char *argv[])
         BeginDrawing();
         ClearBackground(BLACK);
         BeginMode3D(camera);
-
+        DrawGrid(10, 1);
         LinkedList *current = emitter.first;
         while (current != NULL)
         {
@@ -67,7 +65,7 @@ int main(int argc, char *argv[])
                 (Vector3){.x = current->item.pos.x,
                           .y = current->item.pos.y,
                           .z = current->item.pos.z},
-                current->item.scale.value * 10,
+                current->item.scale.value,
                 (Vector3){.x = 0, .y = 0, .z = 0},
                 0, color);
 
