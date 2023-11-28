@@ -49,7 +49,16 @@ Destroys the emitter
 particle_emitter_destroy(&emitter);
 ```
 
+## Features
+ - General forces (gravity, wind)
+ - Attraction / Repulsion vortices
+ - Friction
+ - Particle attributes
+    - rotation
+    - scale
+    - color
+
 ## Roadmap
  - Implement an editor
  - Load and save presets
- - support more options
+ - Support more attributes

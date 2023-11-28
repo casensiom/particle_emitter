@@ -2,8 +2,8 @@
 // https://github.com/casensiom/particle_emitter
 //
 
-#ifndef _PARTICLES_H_
-#define _PARTICLES_H_
+#ifndef _PARTICLE_EMITTER_H_
+#define _PARTICLE_EMITTER_H_
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -59,11 +59,6 @@ typedef struct vector3d_struct
 
 #endif // LINEAR_ALGEBRA
 
-typedef struct range_vector3d_struct
-{
-    Vector3d max;
-    Vector3d min;
-} RangeVector3d;
 
 typedef struct range_float_struct
 {
@@ -71,12 +66,33 @@ typedef struct range_float_struct
     float max;
 } Rangef;
 
+typedef struct range_struct
+{
+    Rangef start;
+    Rangef end;
+} Range;
+
+typedef struct range_color_struct
+{
+    Range r;
+    Range g;
+    Range b;
+    Range a;
+} RangeColor;
+
 typedef struct interpolate_struct
 {
     float start;
     float end;
     float value;
 } Interpolate;
+
+typedef struct interpolate_vector3d_struct
+{
+    Interpolate x;
+    Interpolate y;
+    Interpolate z;
+} InterpolateVector3d;
 
 typedef struct interpolate_color_struct
 {
@@ -88,31 +104,36 @@ typedef struct interpolate_color_struct
 
 typedef struct force_struct
 {
-    Vector3d pos;
-    float force;
+    Vector3d dir;
+    float magnitude;
 } Force;
 PE_DEFINE_ARRAY(Force);
 
+typedef struct vortex_struct
+{
+    Vector3d pos;
+    float magnitude;
+} Vortex;
+PE_DEFINE_ARRAY(Vortex);
+
 typedef struct environment_structs
 {
-    Vector3d gravity;
-    Vector3d friction;
     ForceArray forces;
-    RangeVector3d speedLimit;
+    VortexArray vortices;
+    Vector3d friction;
+    Vector3d speedMax;
+    Vector3d speedMin;
 } Environment;
 
 typedef struct particle_struct
 {
     Vector3d pos;
-    Vector3d lastPos;
     Vector3d speed;
-    Vector3d size;
     Interpolate scale;
     Interpolate rotation;
     InterpolateColor color;
     float lifetime;
     float timestamp;
-    size_t id;
 } Particle;
 
 typedef struct linked_list_struct
@@ -143,14 +164,11 @@ typedef struct shape_struct
 
 typedef struct emit_configuration_struct
 {
-    Rangef colorRed;
-    Rangef colorGreen;
-    Rangef colorBlue;
-    Rangef colorAlpha;
-    Rangef rotation;
-    Rangef scale;
-    Rangef speed;
     Rangef lifespan;
+    Rangef speed;
+    RangeColor color;
+    Range scale;
+    Range rotation;
 
     float particlesPerSecond;
 } EmitConfiguration;
@@ -192,6 +210,15 @@ extern "C"
 #define PARTICLE_EMITTER_IMPLEMENTATION
 #ifdef PARTICLE_EMITTER_IMPLEMENTATION
 
+static Vector3d particle_emitter_normalize(Vector3d v)
+{
+    float length = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+    v.x /= length;
+    v.y /= length;
+    v.z /= length;
+    return v;
+}
+
 static float particle_emitter_randomize(float min, float max)
 {
     if (min > max)
@@ -203,18 +230,9 @@ static float particle_emitter_randomize(float min, float max)
     return min + ((float)rand() / (float)RAND_MAX) * (max - min);
 }
 
-static float particle_emitter_randomize_range(Rangef range)
+static float particle_emitter_randomize_rangef(Rangef range)
 {
     return particle_emitter_randomize(range.min, range.max);
-}
-
-static Vector3d particle_emitter_normalize(Vector3d v)
-{
-    float length = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-    v.x /= length;
-    v.y /= length;
-    v.z /= length;
-    return v;
 }
 
 static Vector3d particle_emitter_randomize_vector(Rangef range)
@@ -230,12 +248,12 @@ static Vector3d particle_emitter_randomize_vector(Rangef range)
     return (Vector3d){.x = v.x * mag, .y = v.y * mag, .z = v.z * mag};
 }
 
-static Interpolate particle_emitter_randomize_interpolate(Rangef range)
+static Interpolate particle_emitter_randomize_interpolate(Range range)
 {
-    float start = particle_emitter_randomize(range.min, range.max);
+    float start = particle_emitter_randomize(range.start.min, range.start.max);
     return (Interpolate){
         .start = start,
-        .end = particle_emitter_randomize(range.min, range.max),
+        .end = particle_emitter_randomize(range.end.min, range.end.max),
         .value = start};
 }
 
@@ -354,11 +372,8 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
 
 static void init_particle(Emitter *emitter, Particle *particle)
 {
-    static size_t id_counter = 0;
-
-    particle->id = ++id_counter;
     particle->timestamp = emitter->elapsed;
-    particle->lifetime = particle_emitter_randomize_range(emitter->config.lifespan);
+    particle->lifetime = particle_emitter_randomize_rangef(emitter->config.lifespan);
 
     // TODO: Improve position
     particle->pos = particle_emitter_random_pos(emitter);
@@ -366,10 +381,10 @@ static void init_particle(Emitter *emitter, Particle *particle)
 
     particle->rotation = particle_emitter_randomize_interpolate(emitter->config.rotation);
     particle->scale = particle_emitter_randomize_interpolate(emitter->config.scale);
-    particle->color.r = particle_emitter_randomize_interpolate(emitter->config.colorRed);
-    particle->color.g = particle_emitter_randomize_interpolate(emitter->config.colorGreen);
-    particle->color.b = particle_emitter_randomize_interpolate(emitter->config.colorBlue);
-    particle->color.a = particle_emitter_randomize_interpolate(emitter->config.colorAlpha);
+    particle->color.r = particle_emitter_randomize_interpolate(emitter->config.color.r);
+    particle->color.g = particle_emitter_randomize_interpolate(emitter->config.color.g);
+    particle->color.b = particle_emitter_randomize_interpolate(emitter->config.color.b);
+    particle->color.a = particle_emitter_randomize_interpolate(emitter->config.color.a);
 }
 
 static void update_particle_position(Emitter *emitter, Particle *particle, float dt)
@@ -379,19 +394,23 @@ static void update_particle_position(Emitter *emitter, Particle *particle, float
     particle->speed.y *= env->friction.y;
     particle->speed.z *= env->friction.z;
 
+    for (size_t i = 0; i < env->vortices.count; ++i)
+    {
+        Vector3d dir = particle_emitter_direction(env->vortices.items[i].pos, particle->pos);
+        float dist = particle_emitter_distance(particle->pos, env->vortices.items[i].pos);
+        float magnitude = env->vortices.items[i].magnitude / dist;
+        particle->speed.x += dir.x * magnitude;
+        particle->speed.y += dir.y * magnitude;
+        particle->speed.z += dir.z * magnitude;
+    }
     for (size_t i = 0; i < env->forces.count; ++i)
     {
-        Vector3d dir = particle_emitter_direction(particle->pos, env->forces.items[i].pos);
-        float dist = particle_emitter_distance(particle->pos, env->forces.items[i].pos);
-        float magnitude = env->forces.items[i].force / dist;
-        particle->speed.x += dir.x * magnitude * dt;
-        particle->speed.y += dir.y * magnitude * dt;
-        particle->speed.z += dir.z * magnitude * dt;
+        Vector3d dir = env->forces.items[i].dir;
+        float magnitude = env->forces.items[i].magnitude;
+        particle->speed.x += dir.x * magnitude;
+        particle->speed.y += dir.y * magnitude;
+        particle->speed.z += dir.z * magnitude;
     }
-
-    particle->lastPos.x = particle->pos.x;
-    particle->lastPos.y = particle->pos.y;
-    particle->lastPos.z = particle->pos.z;
 
     particle->pos.x += particle->speed.x * dt;
     particle->pos.y += particle->speed.y * dt;
@@ -424,11 +443,8 @@ static void update_particles(Emitter *emitter, float dt)
             continue;
         }
 
-        // Move particle
-        update_particle_position(emitter, &(current->item), t);
-
-        // Interpolate values
-        update_particle_attributes(emitter, &(current->item), dt);
+        update_particle_position(emitter, &(current->item), dt);
+        update_particle_attributes(emitter, &(current->item), t);
 
         current = current->next;
     }
@@ -460,13 +476,19 @@ Emitter particle_emitter_create(EmitConfiguration configuration)
         .start = (Vector3d){.x = 0, .y = 0, .z = 0},
         .end = (Vector3d){.x = 0, .y = 0, .z = 0}};
     emitter.environment = (Environment){
-        .gravity = (Vector3d){.x = 0, .y = 0, .z = 0},
-        .friction = (Vector3d){.x = 1, .y = 1, .z = 1},
+        .vortices = (VortexArray){
+            .items = NULL,
+            .count = 0,
+            .capacity = 0},
         .forces = (ForceArray){
             .items = NULL,
             .count = 0,
             .capacity = 0},
-        .speedLimit = (RangeVector3d){.max = (Vector3d){.x = FLT_MAX, .y = FLT_MAX, .z = FLT_MAX}, .min = (Vector3d){.x = FLT_MIN, .y = FLT_MIN, .z = FLT_MIN}}};
+        .friction = (Vector3d){.x = 1, .y = 1, .z = 1},
+        .speedMax = (Vector3d){.x = FLT_MAX, .y = FLT_MAX, .z = FLT_MAX},
+        .speedMin = (Vector3d){.x = FLT_MIN, .y = FLT_MIN, .z = FLT_MIN}
+    };
+        
     emitter.config = configuration;
     emitter.pendingParticles = 0;
     emitter.elapsed = 0;
@@ -498,4 +520,4 @@ void particle_emitter_destroy(Emitter *emitter)
 
 #endif //  PARTICLE_EMITTER_IMPLEMENTATION
 
-#endif // _PARTICLES_H_
+#endif // _PARTICLE_EMITTER_H_

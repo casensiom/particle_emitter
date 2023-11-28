@@ -2,179 +2,6 @@
 
 #include "common.h"
 
-
-
-void
-link_list_unittest() {
-
-    // move_first_to_empty
-    {
-        LinkedList a;
-        LinkedList b;
-        LinkedList c;
-        a.prev = NULL;
-        a.next = &b;
-        b.prev = &a;
-        b.next = &c;
-        c.prev = &b;
-        c.next = NULL;
-
-        LinkedList *from = &a;
-        LinkedList *to = NULL;
-
-        linked_list_move_item(&from, &to);
-        assert(to != NULL);
-        assert(to == &a);
-        assert(a.prev == NULL);
-        assert(a.next == NULL);
-        assert(from != NULL);
-        assert(from == &b);
-        assert(b.prev == NULL);
-        assert(b.next == &c);
-        assert(c.prev == &b);
-        assert(c.next == NULL);
-    }
-    // move_mid_to_empty
-    {
-        LinkedList a;
-        LinkedList b;
-        LinkedList c;
-        a.prev = NULL;
-        a.next = &b;
-        b.prev = &a;
-        b.next = &c;
-        c.prev = &b;
-        c.next = NULL;
-
-        LinkedList *from = &b;
-        LinkedList *to = NULL;
-
-        linked_list_move_item(&from, &to);
-        assert(to != NULL);
-        assert(to == &b);
-        assert(b.prev == NULL);
-        assert(b.next == NULL);
-        assert(from != NULL);
-        assert(from == &c);
-        assert(a.prev == NULL);
-        assert(a.next == &c);
-        assert(c.prev == &a);
-        assert(c.next == NULL);
-    }
-
-    // move_last_to_empty
-    {
-        LinkedList a;
-        LinkedList b;
-        LinkedList c;
-        a.prev = NULL;
-        a.next = &b;
-        b.prev = &a;
-        b.next = &c;
-        c.prev = &b;
-        c.next = NULL;
-
-        LinkedList *from = &c;
-        LinkedList *to = NULL;
-
-        linked_list_move_item(&from, &to);
-        assert(to != NULL);
-        assert(to == &c);
-        assert(c.prev == NULL);
-        assert(c.next == NULL);
-        assert(from == NULL);
-        assert(a.prev == NULL);
-        assert(a.next == &b);
-        assert(b.prev == &a);
-        assert(b.next == NULL);
-    }
-
-
-    // move_first_to_first
-    {
-        LinkedList a;
-        LinkedList b;
-        LinkedList c;
-        LinkedList d;
-        LinkedList e;
-        a.prev = NULL;
-        a.next = &b;
-        b.prev = &a;
-        b.next = &c;
-        c.prev = &b;
-        c.next = NULL;
-
-        d.prev = NULL;
-        d.next = &e;
-        e.prev = &d;
-        e.next = NULL;
-
-        LinkedList *from = &a;
-        LinkedList *to = &d;
-
-        linked_list_move_item(&from, &to);
-        assert(from != NULL);
-        assert(from == &b);
-        assert(b.prev == NULL);
-        assert(b.next == &c);
-        assert(c.prev == &b);
-        assert(c.next == NULL);
-
-        assert(to != NULL);
-        assert(to == &a);
-        assert(a.prev == NULL);
-        assert(a.next == &d);
-        assert(d.prev == &a);
-        assert(d.next == &e);
-        assert(e.prev == &d);
-        assert(e.next == NULL);
-    }
-
-
-
-    // move_mid_to_mid
-    {
-        LinkedList a;
-        LinkedList b;
-        LinkedList c;
-        LinkedList d;
-        LinkedList e;
-        a.prev = NULL;
-        a.next = &b;
-        b.prev = &a;
-        b.next = &c;
-        c.prev = &b;
-        c.next = NULL;
-
-        d.prev = NULL;
-        d.next = &e;
-        e.prev = &d;
-        e.next = NULL;
-
-        LinkedList *from = &b;
-        LinkedList *to = &e;
-
-        linked_list_move_item(&from, &to);
-        assert(from != NULL);
-        assert(from == &c);
-        assert(a.prev == NULL);
-        assert(a.next == &c);
-        assert(c.prev == &a);
-        assert(c.next == NULL);
-
-        assert(to != NULL);
-        assert(to == &b);
-        assert(d.prev == NULL);
-        assert(d.next == &b);
-        assert(b.prev == &d);
-        assert(b.next == &e);
-        assert(e.prev == &b);
-        assert(e.next == NULL);
-    }
-}
-
-
-
 int main(int argc, char *argv[])
 {
 
@@ -182,12 +9,12 @@ int main(int argc, char *argv[])
 
     const int screenWidth = 800;
     const int screenHeight = 400;
-    InitWindow(screenWidth, screenHeight, "Particle Emitter - casensiom");
+    InitWindow(screenWidth, screenHeight, "Particle Emitter");
 
 
     // Define the camera to look into our 3d world
     Camera camera = {0};
-    camera.position = (Vector3){0, 0, 1000};       // Camera position
+    camera.position = (Vector3){0, 0, 300};     // Camera position
     camera.target = (Vector3){0, 0, 0};         // Camera looking at point
     camera.up = (Vector3){0.0f, 1.0f, 0.0f};    // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                        // Camera field-of-view Y
@@ -195,36 +22,35 @@ int main(int argc, char *argv[])
 
 
     EmitConfiguration configuration;
-    configuration.particlesPerSecond = 30;
-    configuration.lifespan = (Rangef){.min = 2, .max = 3};
-    configuration.speed = (Rangef){.min = 1.2, .max = 1.5};
-    configuration.colorRed = (Rangef){.min = 0, .max = 0.1};
-    configuration.colorGreen = (Rangef){.min = 0.8, .max = 1};
-    configuration.colorBlue = (Rangef){.min = 0, .max = 0.1};
-    configuration.colorAlpha = (Rangef){.min = 1, .max = 1};
-    configuration.scale = (Rangef){.min = 0.1, .max = 2};
-    configuration.rotation = (Rangef){.min = 1, .max = 1};
+    configuration.particlesPerSecond = 10;
+    configuration.lifespan = (Rangef){.min = 8, .max = 10};
+    configuration.speed = (Rangef){.min = 20, .max = 50};
+    configuration.color.r = (Range){ .start = (Rangef){.min = 0, .max = 0}, .end = (Rangef){.min = 0.1, .max = 0.1}};
+    configuration.color.g = (Range){ .start = (Rangef){.min = 0.8, .max = 0.8}, .end = (Rangef){.min = 1, .max = 1}};
+    configuration.color.b = (Range){ .start = (Rangef){.min = 0, .max = 0}, .end = (Rangef){.min = 0.1, .max = 0.1}};
+    configuration.color.a = (Range){ .start = (Rangef){.min = 1, .max = 1}, .end = (Rangef){.min = 0, .max = .1}};
+    configuration.scale = (Range){ .start = (Rangef){.min = 1, .max = 1}, .end = (Rangef){.min = 1.2, .max = 1.3}};
+    configuration.rotation = (Range){ .start = (Rangef){.min = 1, .max = 1}, .end = (Rangef){.min = 1, .max = 1}};
     Emitter emitter = particle_emitter_create(configuration);
     
-    emitter.environment.friction.x = 0.999;
-    emitter.environment.friction.y = 0.999;
-    emitter.environment.friction.z = 0.999;
+    emitter.environment.friction.x = 0.99999;
+    emitter.environment.friction.y = 0.99999;
+    emitter.environment.friction.z = 0.99999;
 
     emitter.shape.type = ST_Cube;
     emitter.shape.start = (Vector3d){.x = -10, .y = 10,  .z = 0};
     emitter.shape.end   = (Vector3d){.x = 10,  .y = -10, .z = 0};
 
-    // emitter.environment.forces = PE_CREATE_ARRAY(Force, 4);
-    // PE_INSERT(emitter.environment.forces, ((Force) { .pos = (Vector3d){.x =-300, .y =-100, .z = 0}, .force = -0.06 }));
-    // PE_INSERT(emitter.environment.forces, ((Force) { .pos = (Vector3d){.x =-300, .y = 100, .z = 0}, .force = -0.06 }));
-    // PE_INSERT(emitter.environment.forces, ((Force) { .pos = (Vector3d){.x = 300, .y = 100, .z = 0}, .force = 0.1}));
-    // PE_INSERT(emitter.environment.forces, ((Force) { .pos = (Vector3d){.x = 300, .y =-100, .z = 0}, .force = 0.1}));
-
+    emitter.environment.vortices = PE_CREATE_ARRAY(Vortex, 4);
+    PE_INSERT(emitter.environment.vortices, ((Vortex) { .pos = (Vector3d){.x = 100, .y = -10, .z = 0}, .magnitude = 20 }));
+    PE_INSERT(emitter.environment.vortices, ((Vortex) { .pos = (Vector3d){.x = -100, .y = 10, .z = 0}, .magnitude = 20 }));
+    PE_INSERT(emitter.environment.vortices, ((Vortex) { .pos = (Vector3d){.x = 100, .y = -10, .z = 0}, .magnitude = -10}));
+    PE_INSERT(emitter.environment.vortices, ((Vortex) { .pos = (Vector3d){.x = -100, .y = 10, .z = 0}, .magnitude = -10}));
 
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
 
-        // UpdateCamera(&camera, CAMERA_THIRD_PERSON);
+        UpdateCamera(&camera, CAMERA_THIRD_PERSON);
         float dt = GetFrameTime();
         particle_emitter_update(&emitter, dt);
 
@@ -253,6 +79,18 @@ int main(int argc, char *argv[])
 
                     current = current->next;
                 }
+
+                for (size_t i = 0; i < emitter.environment.vortices.count; i++)
+                {
+                    Vector3d c = emitter.environment.vortices.items[i].pos;
+                    float s = emitter.environment.vortices.items[i].magnitude;
+                    DrawCircle3D(
+                        (Vector3){ .x  = c.x, .y = c.y, .z = c.z}, 
+                        s, 
+                        (Vector3){.x= 0, .y= 0, .z= 0}, 
+                        0, RED);
+                }
+
             EndMode3D();
 
 
