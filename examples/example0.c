@@ -4,9 +4,6 @@
 
 int main(int argc, char *argv[])
 {
-
-    link_list_unittest();
-
     const int screenWidth = 800;
     const int screenHeight = 400;
     InitWindow(screenWidth, screenHeight, "Particle Emitter");
