@@ -349,10 +349,11 @@ static Vector3d particle_emitter_random_pos(Emitter *emitter)
     break;
     case ST_Sphere:
     {
+        float pi = 3.14159265358979323846;
         float r = particle_emitter_distance(emitter->shape.start, emitter->shape.end);
         float rnd1 =((float)rand() / (float)RAND_MAX);
         float rnd2 =((float)rand() / (float)RAND_MAX);
-        float theta = 2.0 * M_PI * rnd1; // azimutal angle
+        float theta = 2.0 * pi * rnd1; // azimutal angle
         float phi = acosf(2.0 * rnd2 - 1.0); // polar angle
 
         r = sqrtf(r) / 2;
